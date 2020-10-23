@@ -2,6 +2,7 @@ package belinvestbankExchange
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -99,16 +100,31 @@ func getCurrencies(node *html.Node) (map[string]Currency, error) {
 	return currencies, nil
 }
 
+func MakeRequest() (*http.Response, error) {
+	request, _ := http.NewRequest(http.MethodGet, URL, nil)
+	request.Header.Set(`User-Agent`, `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36`)
+	client := http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		LOGGER.Printf("Request to '%s' got error: %s\n", URL, err.Error())
+		return nil, err
+	}
+	if response.StatusCode != http.StatusOK {
+		msg := fmt.Sprintf("Request to '%s' got HTTP error: %d %s\n", URL, response.StatusCode, response.Status)
+		LOGGER.Println(msg)
+		response.Body.Close()
+		return nil, errors.New(msg)
+	}
+	return response, nil
+}
+
 // use nil instead reader to make http request
 func Get(r io.Reader) (map[string]Currency, error) {
 	if r == nil {
-		response, err := http.Get(URL)
-		if err != nil {
-			LOGGER.Println(err.Error())
-			return nil, err
-		}
-		r = response.Body
+		response, err := MakeRequest()
+		if err != nil { return nil, err }
 		defer response.Body.Close()
+		r = response.Body
 	}
 
 	document, err := html.Parse(r)
