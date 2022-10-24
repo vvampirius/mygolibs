@@ -8,10 +8,22 @@ import (
 type Update struct {
 	Id      int     `json:"update_id"`
 	Message Message `json:"message"`
+	CallbackQuery CallbackQuery `json:"callback_query"`
+}
+
+func (update *Update) IsCallbackQuery() bool {
+	if update.CallbackQuery.Id != `` { return true }
+	return false
+}
+
+func (update *Update) IsMessage() bool {
+	if update.Message.Id != 0 { return true }
+	return false
 }
 
 type Message struct {
 	Id   int    `json:"message_id"`
+	From User	`json:"from"`
 	Date int    `json:"date"`
 	Chat Chat   `json:"chat"`
 	Text string `json:"text"`
@@ -41,6 +53,21 @@ type Entities []struct {
 	Length int `json:"length"`
 }
 
+type CallbackQuery struct {
+	ChatInstance string `json:"chat_instance"`
+	Data string `json:"data"`
+	Id string `json:"id"`
+	Message Message `json:"message"`
+}
+
+type User struct {
+	Id int				`json:"id"`
+	IsBot bool			`json:"is_bot"`
+	FirstName string	`json:"first_name"`
+	LastName string		`json:"last_name"`
+	Username string 	`json:"username"`
+	LanguageCode string	`json:"language_code"`
+}
 
 func UnmarshalUpdate(data []byte) (Update, error) {
 	update := Update{}
