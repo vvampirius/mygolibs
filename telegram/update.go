@@ -28,6 +28,7 @@ type Message struct {
 	Chat Chat   `json:"chat"`
 	Text string `json:"text"`
 	Entities Entities `json:"entities"`
+	ReplyToMessage ReplyToMessage `json:"reply_to_message"`
 }
 
 func (message *Message) IsBotCommand() bool {
@@ -36,6 +37,12 @@ func (message *Message) IsBotCommand() bool {
 	}
 	return false
 }
+
+func (message *Message) IsReplyToMessage() bool {
+	if message.ReplyToMessage.Id != 0 && message.ReplyToMessage.Date != 0 { return true }
+	return false
+}
+
 
 type Chat struct {
 	Id                          int    `json:"id"`
@@ -67,6 +74,15 @@ type User struct {
 	LastName string		`json:"last_name"`
 	Username string 	`json:"username"`
 	LanguageCode string	`json:"language_code"`
+}
+
+type ReplyToMessage struct {
+	Id   int    `json:"message_id"`
+	From User	`json:"from"`
+	Date int    `json:"date"`
+	Chat Chat   `json:"chat"`
+	Text string `json:"text"`
+	Entities Entities `json:"entities"`
 }
 
 func UnmarshalUpdate(data []byte) (Update, error) {

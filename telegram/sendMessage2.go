@@ -29,3 +29,15 @@ type SendMessageIntWithReplyKeyboardMarkup struct {
 	SendMessageIntWithoutReplyMarkup
 	ReplyMarkup ReplyKeyboardMarkup `json:"reply_markup"`
 }
+
+
+type ForceReply struct {
+	ForceReply bool `json:"force_reply"`
+	InputFieldPlaceholder string `json:"input_field_placeholder"`
+	Selective bool `json:"selective"`
+}
+
+type SendMessageIntWithForceReply struct {
+	SendMessageIntWithoutReplyMarkup
+	ReplyMarkup ForceReply `json:"reply_markup"`
+}
