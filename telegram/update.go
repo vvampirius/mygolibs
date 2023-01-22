@@ -6,43 +6,50 @@ import (
 )
 
 type Update struct {
-	Id      int     `json:"update_id"`
-	Message Message `json:"message"`
+	Id            int           `json:"update_id"`
+	Message       Message       `json:"message"`
 	CallbackQuery CallbackQuery `json:"callback_query"`
 }
 
 func (update *Update) IsCallbackQuery() bool {
-	if update.CallbackQuery.Id != `` { return true }
+	if update.CallbackQuery.Id != `` {
+		return true
+	}
 	return false
 }
 
 func (update *Update) IsMessage() bool {
-	if update.Message.Id != 0 { return true }
+	if update.Message.Id != 0 {
+		return true
+	}
 	return false
 }
 
 type Message struct {
-	Id   int    `json:"message_id"`
-	From User	`json:"from"`
-	Date int    `json:"date"`
-	Chat Chat   `json:"chat"`
-	Text string `json:"text"`
-	Entities Entities `json:"entities"`
+	Id             int            `json:"message_id"`
+	From           User           `json:"from"`
+	Date           int            `json:"date"`
+	Chat           Chat           `json:"chat"`
+	Text           string         `json:"text"`
+	Entities       Entities       `json:"entities"`
 	ReplyToMessage ReplyToMessage `json:"reply_to_message"`
 }
 
 func (message *Message) IsBotCommand() bool {
 	for _, v := range message.Entities {
-		if v.Type == `bot_command` { return true }
+		if v.Type == `bot_command` {
+			return true
+		}
 	}
 	return false
 }
 
 func (message *Message) IsReplyToMessage() bool {
-	if message.ReplyToMessage.Id != 0 && message.ReplyToMessage.Date != 0 { return true }
+	if message.ReplyToMessage.Id != 0 && message.ReplyToMessage.Date != 0 {
+		return true
+	}
 	return false
 }
-
 
 type Chat struct {
 	Id                          int    `json:"id"`
@@ -55,33 +62,33 @@ type Chat struct {
 }
 
 type Entities []struct {
-	Type string `json:"type"`
-	Offset int `json:"offset"`
-	Length int `json:"length"`
+	Type   string `json:"type"`
+	Offset int    `json:"offset"`
+	Length int    `json:"length"`
 }
 
 type CallbackQuery struct {
-	ChatInstance string `json:"chat_instance"`
-	Data string `json:"data"`
-	Id string `json:"id"`
-	Message Message `json:"message"`
+	ChatInstance string  `json:"chat_instance"`
+	Data         string  `json:"data"`
+	Id           string  `json:"id"`
+	Message      Message `json:"message"`
 }
 
 type User struct {
-	Id int				`json:"id"`
-	IsBot bool			`json:"is_bot"`
-	FirstName string	`json:"first_name"`
-	LastName string		`json:"last_name"`
-	Username string 	`json:"username"`
-	LanguageCode string	`json:"language_code"`
+	Id           int    `json:"id" yaml:"id"`
+	IsBot        bool   `json:"is_bot" yaml:"is_bot"`
+	FirstName    string `json:"first_name" yaml:"first_name"`
+	LastName     string `json:"last_name" yaml:"last_name"`
+	Username     string `json:"username" yaml:"username"`
+	LanguageCode string `json:"language_code" yaml:"language_code"`
 }
 
 type ReplyToMessage struct {
-	Id   int    `json:"message_id"`
-	From User	`json:"from"`
-	Date int    `json:"date"`
-	Chat Chat   `json:"chat"`
-	Text string `json:"text"`
+	Id       int      `json:"message_id"`
+	From     User     `json:"from"`
+	Date     int      `json:"date"`
+	Chat     Chat     `json:"chat"`
+	Text     string   `json:"text"`
 	Entities Entities `json:"entities"`
 }
 
