@@ -3,6 +3,7 @@ package telegram
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,13 +15,13 @@ import (
 )
 
 type Api struct {
-	Url string
-	Token string
+	Url            string
+	Token          string
 	RequestTimeout time.Duration
 	RequestRetries int
-	DebugLog *log.Logger
-	ErrorLog *log.Logger
-	ApiErrorFunc func(string, []byte)
+	DebugLog       *log.Logger
+	ErrorLog       *log.Logger
+	ApiErrorFunc   func(string, []byte)
 }
 
 func (api *Api) RequestUrl(method string) string {
@@ -33,7 +34,9 @@ func (api *Api) Do(method string, payload []byte) (int, []byte, error) {
 
 	request, err := http.NewRequest(http.MethodPost, requestUrl, buffer)
 	if err != nil {
-		if api.ErrorLog != nil { api.ErrorLog.Println(requestUrl, err.Error()) }
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(requestUrl, err.Error())
+		}
 		return 0, nil, err
 	}
 	request.Header.Set(`Content-Type`, `application/json`)
@@ -43,15 +46,21 @@ func (api *Api) Do(method string, payload []byte) (int, []byte, error) {
 	}
 	response, err := client.Do(request)
 	if err != nil {
-		if api.ErrorLog != nil { log.Println(api.Url, method, string(payload), err.Error()) }
-		if api.ApiErrorFunc != nil { api.ApiErrorFunc(method, payload) }
+		if api.ErrorLog != nil {
+			log.Println(api.Url, method, string(payload), err.Error())
+		}
+		if api.ApiErrorFunc != nil {
+			api.ApiErrorFunc(method, payload)
+		}
 		return 0, nil, err
 	}
 	defer response.Body.Close()
 
 	data, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		if api.ErrorLog != nil { log.Println(api.Url, method, string(payload), err.Error()) }
+		if api.ErrorLog != nil {
+			log.Println(api.Url, method, string(payload), err.Error())
+		}
 		return 0, nil, err
 	}
 
@@ -77,20 +86,31 @@ func (api *Api) DoWithRetry(method string, payload []byte) (int, []byte, error) 
 func (api *Api) Request(method string, payload interface{}) (int, *RequestResponse, error) {
 	j, err := JsonEncode(payload)
 	if err != nil {
-		if api.ErrorLog != nil { log.Println(method, payload, err.Error()) }
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(method, payload, err.Error())
+		}
 		return 0, nil, err
 	}
 	status, data, err := api.DoWithRetry(method, j)
-	if err != nil { return status, nil, err }
+	if err != nil {
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(method, payload, err.Error())
+		}
+		return status, nil, err
+	}
 	requestResponse, err := api.UnmarshalRequestResponse(data)
-	if err != nil { return status, nil, err}
+	if err != nil {
+		return status, nil, err
+	}
 	return status, requestResponse, err
 }
 
 func (api *Api) UnmarshalUpdate(data []byte) (*Update, error) {
 	update := Update{}
 	if err := json.Unmarshal(data, &update); err != nil {
-		if api.ErrorLog != nil { api.ErrorLog.Println(string(data), err.Error()) }
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(string(data), err.Error())
+		}
 		return nil, err
 	}
 	return &update, nil
@@ -99,7 +119,9 @@ func (api *Api) UnmarshalUpdate(data []byte) (*Update, error) {
 func (api *Api) UnmarshalRequestResponse(data []byte) (*RequestResponse, error) {
 	requestResponse := RequestResponse{}
 	if err := json.Unmarshal(data, &requestResponse); err != nil {
-		if api.ErrorLog != nil { api.ErrorLog.Println(string(data), err.Error()) }
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(string(data), err.Error())
+		}
 		return nil, err
 	}
 	return &requestResponse, nil
@@ -108,31 +130,43 @@ func (api *Api) UnmarshalRequestResponse(data []byte) (*RequestResponse, error) 
 func (api *Api) SendFile(method, fileName string, r io.Reader, fields map[string]string) (int, *RequestResponse, error) {
 	tempFile, err := ioutil.TempFile(os.TempDir(), fileName)
 	if err != nil {
-		if api.ErrorLog != nil { api.ErrorLog.Println(err.Error()) }
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(err.Error())
+		}
 		return 0, nil, err
 	}
 	defer os.Remove(tempFile.Name())
 	defer tempFile.Close()
-	if api.DebugLog != nil { api.DebugLog.Printf("Temp file '%s' created", tempFile.Name()) }
+	if api.DebugLog != nil {
+		api.DebugLog.Printf("Temp file '%s' created", tempFile.Name())
+	}
 	//defer os.Remove(tempFile.Name())
 	writer := multipart.NewWriter(tempFile)
 	for field, value := range fields {
 		if err := writer.WriteField(field, value); err != nil {
-			if api.ErrorLog != nil { api.ErrorLog.Println(err.Error()) }
+			if api.ErrorLog != nil {
+				api.ErrorLog.Println(err.Error())
+			}
 			return 0, nil, err
 		}
 	}
 	filePart, err := writer.CreateFormFile(`file`, fileName)
 	if err != nil {
-		if api.ErrorLog != nil { api.ErrorLog.Println(err.Error()) }
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(err.Error())
+		}
 		return 0, nil, err
 	}
 	if _, err := io.Copy(filePart, r); err != nil {
-		if api.ErrorLog != nil { api.ErrorLog.Println(err.Error()) }
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(err.Error())
+		}
 		return 0, nil, err
 	}
 	if err := writer.Close(); err != nil {
-		if api.ErrorLog != nil { api.ErrorLog.Println(err.Error()) }
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(err.Error())
+		}
 		return 0, nil, err
 	}
 
@@ -140,7 +174,9 @@ func (api *Api) SendFile(method, fileName string, r io.Reader, fields map[string
 	requestUrl := api.RequestUrl(method)
 	request, err := http.NewRequest(http.MethodPost, requestUrl, tempFile)
 	if err != nil {
-		if api.ErrorLog != nil { api.ErrorLog.Println(requestUrl, err.Error()) }
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(requestUrl, err.Error())
+		}
 		return 0, nil, err
 	}
 	request.Header.Add("Content-Type", writer.FormDataContentType())
@@ -150,7 +186,9 @@ func (api *Api) SendFile(method, fileName string, r io.Reader, fields map[string
 	}
 	response, err := client.Do(request)
 	if err != nil {
-		if api.ErrorLog != nil { log.Println(api.Url, method, tempFile.Name(), err.Error()) }
+		if api.ErrorLog != nil {
+			log.Println(api.Url, method, tempFile.Name(), err.Error())
+		}
 		//if api.ApiErrorFunc != nil { api.ApiErrorFunc(method, tempFile.Name()) }
 		return 0, nil, err
 	}
@@ -158,22 +196,53 @@ func (api *Api) SendFile(method, fileName string, r io.Reader, fields map[string
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		if api.ErrorLog != nil { log.Println(api.Url, method, tempFile.Name(), err.Error()) }
+		if api.ErrorLog != nil {
+			log.Println(api.Url, method, tempFile.Name(), err.Error())
+		}
 		return 0, nil, err
 	}
 	requestResponse, err := api.UnmarshalRequestResponse(responseBody)
 	if err != nil {
-		if api.ErrorLog != nil { log.Println(api.Url, method, tempFile.Name(), err.Error()) }
+		if api.ErrorLog != nil {
+			log.Println(api.Url, method, tempFile.Name(), err.Error())
+		}
 		return 0, nil, err
 	}
 
 	return response.StatusCode, requestResponse, nil
 }
 
+func (api *Api) RequestWrapper(method string, payload interface{}, onBlocked func()) error {
+	if method == `` {
+		method = `sendMessage`
+	}
+	statusCode, response, err := api.Request(method, payload)
+	if err != nil &&
+		// https://core.telegram.org/bots/api#editmessagereplymarkup
+		// дурацкий API возвращает Result=true, если это было "inline message" 🤬
+		err.Error() != `json: cannot unmarshal bool into Go struct field RequestResponse.Result of type struct { Chat telegram.Chat; Date int; From telegram.User; MessageId int "json:\"message_id\""; Text string }` {
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(payload, err.Error())
+		}
+		return err
+	}
+	if statusCode != 200 {
+		if statusCode == 403 && response.Description == `Forbidden: bot was blocked by the user` && onBlocked != nil {
+			onBlocked()
+		}
+		err := errors.New(fmt.Sprintf("%d %d %s", statusCode, response.ErrorCode, response.Description))
+		if api.ErrorLog != nil {
+			api.ErrorLog.Println(payload, err.Error())
+		}
+		return err
+	}
+	return nil
+}
+
 func NewApi(token string) *Api {
 	api := Api{
-		Url: DefaultApiUrl,
-		Token: token,
+		Url:            DefaultApiUrl,
+		Token:          token,
 		RequestTimeout: DefaultRequestTimeout,
 		RequestRetries: DefaultRequestRetries,
 	}
