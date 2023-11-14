@@ -112,5 +112,36 @@ func DownloadProfile(name string, client *goinsta.Instagram, storage Storage, af
 			pagination = false
 		}
 	}
+	time.Sleep(delay)
+	storyMedia, err := profile.Stories()
+	if err != nil {
+		ErrorLog.Println(err.Error())
+		return 0, mediaItemsCount, mediaItemsSize, nil
+	}
+	DebugLog.Println(storyMedia.Status, storyMedia.Broadcasts, len(storyMedia.Reel.MediaIDs))
+	for _, reelMediaId := range storyMedia.Reel.MediaIDs {
+		time.Sleep(delay)
+		feedMedia, err := client.GetMedia(reelMediaId)
+		if err != nil {
+			ErrorLog.Println(err.Error())
+			continue
+		}
+		DebugLog.Printf("Reel Media ID: %d\tItems:%d", reelMediaId, len(feedMedia.Items))
+		for _, item := range feedMedia.Items {
+			itemId := item.GetID()
+			DebugLog.Printf("%s\tItem ID:%s\tType:%d\tSeen:%t", item.User.Username, itemId, item.MediaType, item.IsSeen)
+			if storage.IsExist(item.User.Username, item.GetID()) {
+				DebugLog.Println(`Already downloaded`)
+				continue
+			}
+			n, s, err := DownloadItem(item, storage, time.Time{})
+			if err != nil {
+				ErrorLog.Println(err.Error())
+				continue
+			}
+			DebugLog.Printf("Got %d items (%d bytes)", n, s)
+		}
+	}
+
 	return 0, mediaItemsCount, mediaItemsSize, nil
 }
