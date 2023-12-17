@@ -115,7 +115,9 @@ func (fs *FileStorage) SaveMedia(profileName string, _ string, mediaId string, m
 		ErrorLog.Println(filePath, err.Error())
 		return err
 	}
-	defer os.Chtimes(filePath, time.Now(), createdAt)
+	if createdAt.After(time.Now().AddDate(-20, 0, 0)) {
+		defer os.Chtimes(filePath, time.Now(), createdAt)
+	}
 	defer f.Close()
 	_, err = f.Write(data)
 	return err
